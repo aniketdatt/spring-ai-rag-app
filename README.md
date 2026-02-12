@@ -6,7 +6,7 @@ A Retrieval-Augmented Generation (RAG) application built with **Java 25**, **Spr
 
 *   **Document Ingestion**: Upload PDF files via the UI.
 *   **Vector Storage**: Automatically splits text and stores embeddings in **PostgreSQL (pgvector)**.
-*   **RAG Chat**: Chat with your documents using **Ollama (Llama 3)**.
+*   **RAG Chat**: Chat with your documents using **Ollama**.
 *   **Modern UI**: Built with **Vaadin** for a seamless single-page experience.
 *   **Visualization**: View raw vector embeddings stored in the database.
 
@@ -40,10 +40,17 @@ This application uses Ollama to run the LLM locally.
 
 1.  **Download & Install Ollama**: [https://ollama.com/](https://ollama.com/)
 2.  **Start Ollama**: Ensure the Ollama service is running (usually on port `11434`).
-3.  **Pull the Model**: Run the following command in your terminal to download the Llama 3 model:
-    ```bash
-    ollama pull llama3
-    ```
+3.  **Pull the Required Models**:
+    This application is configured to use specific models for chat and embeddings. Run the following commands to download them:
+
+    *   **Chat Model** (`gemma3:4b`):
+        ```bash
+        ollama pull gemma3:4b
+        ```
+    *   **Embedding Model** (`nomic-embed-text:v1.5`):
+        ```bash
+        ollama pull nomic-embed-text:v1.5
+        ```
 
 ### 3. Java
 Ensure you have **Java 25** installed.
