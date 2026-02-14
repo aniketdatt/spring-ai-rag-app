@@ -1,0 +1,188 @@
+/* Modern RAG Application Styles */
+
+:root {
+    --chat-user-bg: var(--lumo-primary-color);
+    --chat-ai-bg: var(--lumo-contrast-10pct);
+    --chat-border-radius: 12px;
+}
+
+/* Main View Styling */
+.main-view {
+    background: var(--lumo-base-color);
+}
+
+/* Upload Component Styling */
+.upload-component {
+    border: 2px dashed var(--lumo-contrast-30pct);
+    border-radius: var(--lumo-border-radius-l);
+    padding: 2rem;
+    transition: all 0.3s ease;
+}
+
+.upload-component:hover {
+    border-color: var(--lumo-primary-color);
+    background-color: var(--lumo-primary-color-10pct);
+}
+
+/* Vector Grid Styling */
+.vector-grid {
+    border-radius: var(--lumo-border-radius-m);
+    box-shadow: var(--lumo-box-shadow-s);
+}
+
+/* Chat History Container */
+.chat-history {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+}
+
+/* Chat Messages */
+.user-message,
+.ai-message {
+    animation: slideIn 0.3s ease-out;
+    box-shadow: var(--lumo-box-shadow-xs);
+}
+
+@keyframes slideIn {
+    from {
+        opacity: 0;
+        transform: translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: translateY(0);
+    }
+}
+
+.user-message {
+    align-self: flex-end;
+}
+
+.ai-message {
+    align-self: flex-start;
+}
+
+/* AI Message Content Styling */
+.ai-message strong {
+    font-weight: 600;
+    color: var(--lumo-primary-text-color);
+}
+
+.ai-message em {
+    font-style: italic;
+    color: var(--lumo-secondary-text-color);
+}
+
+.ai-message code {
+    background-color: var(--lumo-contrast-5pct);
+    padding: 0.2rem 0.4rem;
+    border-radius: 4px;
+    font-family: 'Courier New', monospace;
+    font-size: 0.9em;
+}
+
+.ai-message pre {
+    background-color: var(--lumo-contrast-5pct);
+    padding: 1rem;
+    border-radius: var(--lumo-border-radius-m);
+    overflow-x: auto;
+    margin: 0.5rem 0;
+}
+
+.ai-message pre code {
+    background-color: transparent;
+    padding: 0;
+}
+
+.ai-message ul,
+.ai-message ol {
+    margin: 0.5rem 0;
+    padding-left: 1.5rem;
+}
+
+.ai-message li {
+    margin: 0.25rem 0;
+}
+
+.ai-message h1,
+.ai-message h2,
+.ai-message h3,
+.ai-message h4,
+.ai-message h5,
+.ai-message h6 {
+    margin: 0.5rem 0;
+    font-weight: 600;
+}
+
+.ai-message p {
+    margin: 0.5rem 0;
+    line-height: 1.6;
+}
+
+/* Loading Message */
+.loading-message {
+    animation: pulse 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse {
+    0%, 100% {
+        opacity: 1;
+    }
+    50% {
+        opacity: 0.5;
+    }
+}
+
+/* Chat Input Styling */
+.chat-input {
+    resize: vertical;
+}
+
+/* Send Button */
+.send-button {
+    min-width: 100px;
+    height: fit-content;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .user-message,
+    .ai-message {
+        max-width: 90% !important;
+    }
+}
+
+/* Tab Sheet Styling */
+vaadin-tab {
+    font-weight: 500;
+}
+
+vaadin-tab[selected] {
+    font-weight: 600;
+}
+
+/* Notification Styling */
+vaadin-notification-card {
+    border-radius: var(--lumo-border-radius-m);
+}
+
+/* Smooth Transitions */
+* {
+    transition: background-color 0.2s ease, color 0.2s ease;
+}
+
+/* Grid Row Hover Effect */
+vaadin-grid::part(row):hover {
+    background-color: var(--lumo-primary-color-10pct);
+}
+
+/* Button Hover Effects */
+vaadin-button:hover {
+    transform: translateY(-1px);
+    box-shadow: var(--lumo-box-shadow-m);
+}
+
+vaadin-button:active {
+    transform: translateY(0);
+}
