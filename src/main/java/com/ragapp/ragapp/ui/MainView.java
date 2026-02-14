@@ -3,18 +3,22 @@ package com.ragapp.ragapp.ui;
 import com.ragapp.ragapp.ChatService;
 import com.ragapp.ragapp.IngestionService;
 import com.vaadin.flow.component.Html;
+import com.vaadin.flow.component.UI;
 import com.vaadin.flow.component.button.Button;
 import com.vaadin.flow.component.button.ButtonVariant;
+import com.vaadin.flow.component.confirmdialog.ConfirmDialog;
 import com.vaadin.flow.component.grid.Grid;
 import com.vaadin.flow.component.html.Div;
 import com.vaadin.flow.component.html.H2;
 import com.vaadin.flow.component.html.H3;
+import com.vaadin.flow.component.html.Span;
 import com.vaadin.flow.component.icon.Icon;
 import com.vaadin.flow.component.icon.VaadinIcon;
 import com.vaadin.flow.component.notification.Notification;
 import com.vaadin.flow.component.notification.NotificationVariant;
 import com.vaadin.flow.component.orderedlayout.HorizontalLayout;
 import com.vaadin.flow.component.orderedlayout.VerticalLayout;
+import com.vaadin.flow.component.progressbar.ProgressBar;
 import com.vaadin.flow.component.tabs.TabSheet;
 import com.vaadin.flow.component.textfield.TextArea;
 import com.vaadin.flow.component.upload.Upload;
@@ -22,6 +26,8 @@ import com.vaadin.flow.component.upload.receivers.MemoryBuffer;
 import com.vaadin.flow.router.Route;
 import com.vaadin.flow.theme.lumo.LumoUtility;
 import org.springframework.core.io.InputStreamResource;
+
+import java.util.concurrent.CompletableFuture;
 
 @Route("")
 public class MainView extends VerticalLayout {
@@ -136,6 +142,13 @@ public class MainView extends VerticalLayout {
                 .setFlexGrow(1)
                 .setResizable(true);
 
+        grid.addComponentColumn(entry -> {
+            Button deleteButton = new Button(new Icon(VaadinIcon.TRASH));
+            deleteButton.addThemeVariants(ButtonVariant.LUMO_ERROR, ButtonVariant.LUMO_SMALL);
+            deleteButton.addClickListener(e -> confirmAndDelete(entry));
+            return deleteButton;
+        }).setHeader("Actions").setWidth("100px").setFlexGrow(0);
+
         grid.addClassName("vector-grid");
         grid.setHeight("400px");
 
@@ -209,47 +222,98 @@ public class MainView extends VerticalLayout {
         // Clear input
         chatInput.clear();
 
-        // Show loading indicator
+        // Create wrapper for loading indicator (same as chat messages)
+        Div loadingWrapper = new Div();
+        loadingWrapper.setWidthFull();
+        loadingWrapper.getStyle()
+                .set("display", "flex")
+                .set("justify-content", "flex-start")
+                .set("margin-bottom", "0.5rem");
+
         Div loadingDiv = new Div();
-        loadingDiv.setText("AI is thinking...");
-        loadingDiv.addClassName("ai-message");
-        loadingDiv.addClassName("loading-message");
+        loadingDiv.addClassName("ai-message"); // Add ai-message class here
+
+        // Create horizontal layout for spinner and text
+        HorizontalLayout loadingLayout = new HorizontalLayout();
+        loadingLayout.setSpacing(true);
+        loadingLayout.setAlignItems(Alignment.CENTER);
+
+        // Add spinner
+        ProgressBar spinner = new ProgressBar();
+        spinner.setIndeterminate(true);
+        spinner.setWidth("20px");
+
+        // Add text
+        Span loadingText = new Span("AI is thinking...");
+        loadingText.getStyle().set("font-style", "italic");
+
+        loadingLayout.add(spinner, loadingText);
+        loadingDiv.add(loadingLayout);
+
         loadingDiv.getStyle()
-                .set("font-style", "italic")
+                .set("padding", "0.75rem 1rem")
+                .set("border-radius", "var(--lumo-border-radius-m)")
+                .set("max-width", "80%")
+                .set("background-color", "var(--lumo-contrast-10pct)")
                 .set("color", "var(--lumo-secondary-text-color)");
-        chatHistoryContainer.add(loadingDiv);
 
-        // Get AI response (in real app, this should be async)
-        try {
-            String response = chatService.chat(query);
+        loadingWrapper.add(loadingDiv);
+        chatHistoryContainer.add(loadingWrapper);
 
-            // Remove loading indicator
-            chatHistoryContainer.remove(loadingDiv);
-
-            // Add AI response
-            addChatMessage(response, false);
-
-        } catch (Exception e) {
-            chatHistoryContainer.remove(loadingDiv);
-            Notification notification = Notification.show(
-                    "Error: " + e.getMessage(),
-                    5000,
-                    Notification.Position.TOP_CENTER);
-            notification.addThemeVariants(NotificationVariant.LUMO_ERROR);
-        }
-
-        // Scroll to bottom
+        // Scroll to bottom immediately
         chatHistoryContainer.getElement().executeJs("this.scrollTop = this.scrollHeight");
+
+        // Get current UI instance
+        UI ui = UI.getCurrent();
+
+        // Execute chat request asynchronously
+        CompletableFuture.supplyAsync(() -> {
+            try {
+                return chatService.chat(query);
+            } catch (Exception e) {
+                throw new RuntimeException(e);
+            }
+        }).thenAccept(response -> {
+            // Update UI in a thread-safe manner
+            ui.access(() -> {
+                // Remove loading indicator wrapper
+                chatHistoryContainer.remove(loadingWrapper);
+
+                // Add AI response
+                addChatMessage(response, false);
+
+                // Scroll to bottom
+                chatHistoryContainer.getElement().executeJs("this.scrollTop = this.scrollHeight");
+            });
+        }).exceptionally(throwable -> {
+            // Handle errors in a thread-safe manner
+            ui.access(() -> {
+                chatHistoryContainer.remove(loadingDiv);
+                Notification notification = Notification.show(
+                        "Error: " + throwable.getMessage(),
+                        5000,
+                        Notification.Position.TOP_CENTER);
+                notification.addThemeVariants(NotificationVariant.LUMO_ERROR);
+            });
+            return null;
+        });
     }
 
     private void addChatMessage(String message, boolean isUser) {
+        // Create a wrapper div for proper layout
+        Div messageWrapper = new Div();
+        messageWrapper.setWidthFull();
+        messageWrapper.getStyle()
+                .set("display", "flex")
+                .set("justify-content", isUser ? "flex-end" : "flex-start")
+                .set("margin-bottom", "0.5rem");
+
         Div messageDiv = new Div();
         messageDiv.addClassName(isUser ? "user-message" : "ai-message");
 
-        // Style the message
+        // Style the message bubble
         messageDiv.getStyle()
                 .set("padding", "0.75rem 1rem")
-                .set("margin-bottom", "0.5rem")
                 .set("border-radius", "var(--lumo-border-radius-m)")
                 .set("max-width", "80%")
                 .set("word-wrap", "break-word");
@@ -257,9 +321,7 @@ public class MainView extends VerticalLayout {
         if (isUser) {
             messageDiv.getStyle()
                     .set("background-color", "var(--lumo-primary-color)")
-                    .set("color", "var(--lumo-primary-contrast-color)")
-                    .set("margin-left", "auto")
-                    .set("text-align", "right");
+                    .set("color", "var(--lumo-primary-contrast-color)");
             messageDiv.setText(message);
         } else {
             messageDiv.getStyle()
@@ -272,7 +334,38 @@ public class MainView extends VerticalLayout {
             messageDiv.add(htmlComponent);
         }
 
-        chatHistoryContainer.add(messageDiv);
+        messageWrapper.add(messageDiv);
+        chatHistoryContainer.add(messageWrapper);
+    }
+
+    private void confirmAndDelete(VectorStoreEntry entry) {
+        ConfirmDialog dialog = new ConfirmDialog();
+        dialog.setHeader("Delete Document");
+        dialog.setText("Are you sure you want to delete this entry? This action cannot be undone.");
+        dialog.setCancelable(true);
+        dialog.setConfirmText("Delete");
+        dialog.setConfirmButtonTheme("error primary");
+
+        dialog.addConfirmListener(event -> {
+            boolean success = vectorStoreService.deleteById(entry.id());
+
+            if (success) {
+                Notification notification = Notification.show(
+                        "✓ Document deleted successfully",
+                        3000,
+                        Notification.Position.TOP_CENTER);
+                notification.addThemeVariants(NotificationVariant.LUMO_SUCCESS);
+                refreshGrid();
+            } else {
+                Notification notification = Notification.show(
+                        "✗ Failed to delete document",
+                        5000,
+                        Notification.Position.TOP_CENTER);
+                notification.addThemeVariants(NotificationVariant.LUMO_ERROR);
+            }
+        });
+
+        dialog.open();
     }
 
     private void refreshGrid() {

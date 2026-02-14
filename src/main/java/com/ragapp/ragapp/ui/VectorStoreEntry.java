@@ -1,4 +1,4 @@
 package com.ragapp.ragapp.ui;
 
-public record VectorStoreEntry(String content, String embedding) {
+public record VectorStoreEntry(String id, String content, String embedding) {
 }
