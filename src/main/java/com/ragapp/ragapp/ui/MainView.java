@@ -1,5 +1,6 @@
 package com.ragapp.ragapp.ui;
 
+import com.ragapp.ragapp.ChatResponse;
 import com.ragapp.ragapp.ChatService;
 import com.ragapp.ragapp.IngestionService;
 import com.vaadin.flow.component.Html;
@@ -273,14 +274,19 @@ public class MainView extends VerticalLayout {
             } catch (Exception e) {
                 throw new RuntimeException(e);
             }
-        }).thenAccept(response -> {
+        }).thenAccept(chatResponse -> {
             // Update UI in a thread-safe manner
             ui.access(() -> {
                 // Remove loading indicator wrapper
                 chatHistoryContainer.remove(loadingWrapper);
 
                 // Add AI response
-                addChatMessage(response, false);
+                addChatMessage(chatResponse.answer(), false);
+
+                // Add references section if available
+                if (chatResponse.references() != null && !chatResponse.references().isEmpty()) {
+                    addReferencesSection(chatResponse.references());
+                }
 
                 // Scroll to bottom
                 chatHistoryContainer.getElement().executeJs("this.scrollTop = this.scrollHeight");
@@ -288,7 +294,7 @@ public class MainView extends VerticalLayout {
         }).exceptionally(throwable -> {
             // Handle errors in a thread-safe manner
             ui.access(() -> {
-                chatHistoryContainer.remove(loadingDiv);
+                chatHistoryContainer.remove(loadingWrapper);
                 Notification notification = Notification.show(
                         "Error: " + throwable.getMessage(),
                         5000,
@@ -336,6 +342,66 @@ public class MainView extends VerticalLayout {
 
         messageWrapper.add(messageDiv);
         chatHistoryContainer.add(messageWrapper);
+    }
+
+    private void addReferencesSection(java.util.List<ChatResponse.Reference> references) {
+        Div referencesWrapper = new Div();
+        referencesWrapper.setWidthFull();
+        referencesWrapper.getStyle()
+                .set("display", "flex")
+                .set("justify-content", "flex-start")
+                .set("margin-bottom", "0.5rem");
+
+        Div referencesDiv = new Div();
+        referencesDiv.getStyle()
+                .set("padding", "0.75rem 1rem")
+                .set("border-radius", "var(--lumo-border-radius-m)")
+                .set("max-width", "80%")
+                .set("background-color", "var(--lumo-contrast-5pct)")
+                .set("border-left", "3px solid var(--lumo-primary-color)")
+                .set("font-size", "0.85em")
+                .set("color", "var(--lumo-secondary-text-color)");
+
+        // Header
+        Span refHeader = new Span("\uD83D\uDCC4 References Used");
+        refHeader.getStyle()
+                .set("font-weight", "bold")
+                .set("display", "block")
+                .set("margin-bottom", "0.5rem")
+                .set("color", "var(--lumo-primary-text-color)");
+        referencesDiv.add(refHeader);
+
+        // Add each reference
+        for (int i = 0; i < references.size(); i++) {
+            Div refItem = new Div();
+            String refContent = references.get(i).content();
+            // Truncate long references for display
+            String displayContent = refContent.length() > 300
+                    ? refContent.substring(0, 300) + "..."
+                    : refContent;
+
+            Span refNumber = new Span("[" + (i + 1) + "] ");
+            refNumber.getStyle()
+                    .set("font-weight", "bold")
+                    .set("color", "var(--lumo-primary-color)");
+
+            Span refText = new Span(displayContent);
+            refText.getStyle()
+                    .set("line-height", "1.4")
+                    .set("word-wrap", "break-word");
+
+            refItem.add(refNumber, refText);
+            refItem.getStyle()
+                    .set("padding", "0.4rem 0")
+                    .set("border-bottom", i < references.size() - 1
+                            ? "1px solid var(--lumo-contrast-10pct)"
+                            : "none");
+
+            referencesDiv.add(refItem);
+        }
+
+        referencesWrapper.add(referencesDiv);
+        chatHistoryContainer.add(referencesWrapper);
     }
 
     private void confirmAndDelete(VectorStoreEntry entry) {

@@ -26,7 +26,7 @@ public class ChatController {
     }
 
     @GetMapping("/chat")
-    public String chat(@RequestParam String query) {
+    public ChatResponse chat(@RequestParam String query) {
         return chatService.chat(query);
     }
 }
